@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManchSphere | Личный портал</title>
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --accent: #ff0055;
+            --bg: #050505;
+            --panel: #111111;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            background: var(--bg); color: white;
+            font-family: 'Segoe UI', Roboto, sans-serif; overflow: hidden;
+        }
+
+        /* ЭКРАН ВХОДА (LOGIN) */
+        #auth-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; text-align: center;
+        }
+        .login-card {
+            background: var(--panel); padding: 40px; border-radius: 20px;
+            border: 1px solid #222; box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+        input {
+            width: 250px; padding: 15px; margin: 10px 0; border-radius: 10px;
+            border: 1px solid #333; background: #000; color: var(--primary); font-size: 16px;
+        }
+        .btn {
+            padding: 15px 40px; border-radius: 10px; border: none;
+            background: var(--primary); color: black; font-weight: bold; cursor: pointer;
+        }
+
+        /* ГЛАВНЫЙ ИНТЕРФЕЙС (DASHBOARD) */
+        #app { display: none; height: 100vh; grid-template-rows: auto 1fr auto; }
+
+        .header { padding: 15px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Разделы контента */
+        .content { overflow-y: auto; height: 100%; scrollbar-width: none; }
+        .content::-webkit-scrollbar { display: none; }
+
+        /* Поиск и Скачивание */
+        .search-area { padding: 20px; text-align: center; }
+        .search-row { display: flex; gap: 5px; max-width: 600px; margin: 10px auto; }
+        
+        /* Видео лента */
+        .video-feed { height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; }
+        .video-box { height: 100%; scroll-snap-align: start; position: relative; background: #000; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Профиль */
+        .profile-card { padding: 50px; text-align: center; }
+        .token-box { background: #000; padding: 15px; border-radius: 10px; border: 1px dashed var(--primary); margin: 20px; font-family: monospace; }
+
+        /* Навигация снизу */
+        .bottom-nav {
+            background: #000; border-top: 1px solid #222; height: 60px;
+            display: flex; justify-content: space-around; align-items: center;
+        }
+        .nav-item { font-size: 24px; cursor: pointer; opacity: 0.5; }
+        .nav-item.active { opacity: 1; color: var(--primary); }
+
+        /* Анимация лайка */
+        .heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; color: var(--accent); opacity: 0; pointer-events: none; }
+        @keyframes pop { 0% { scale: 0; opacity: 0; } 50% { scale: 1.2; opacity: 1; } 100% { scale: 1.5; opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="login-card">
+            <h1>ManchSphere</h1>
+            <p>Введите адрес доступа</p>
+            <input type="text" id="urlInput" placeholder="manch.com" onkeypress="if(event.key==='Enter') login()">
+            <br>
+            <button class="btn" onclick="login()">ВОЙТИ</button>
+        </div>
+    </div>
+
+    <div id="app">
+        <div class="header">
+            <span style="color:var(--primary); font-weight:bold;">MANCH.COM</span>
+            <span id="topName">Манч</span>
+        </div>
+
+        <div class="content" id="main-content">
+            
+            <div id="view-home" class="view">
+                <div class="search-area">
+                    <h2>Умный Поиск</h2>
+                    <div class="search-row">
+                        <input type="text" id="globalSearch" style="flex:1" placeholder="Найти всё что угодно...">
+                        <button class="btn" style="padding:10px" onclick="doSearch()">🔍</button>
+                    </div>
+                    <hr style="border:0.5px solid #222; margin:30px 0;">
+                    <h2>Загрузчик файлов</h2>
+                    <p style="font-size:12px; color:#666;">Вставь ссылку из Telegram или интернета</p>
+                    <div class="search-row">
+                        <input type="text" id="dlLink" style="flex:1" placeholder="https://t.me/...">
+                        <button class="btn" style="padding:10px; background:white;" onclick="doDownload()">⬇️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-video" class="view" style="display:none; height:100%;">
+                <div class="video-feed" id="vFeed">
+                    </div>
+            </div>
+
+            <div id="view-profile" class="view" style="display:none;">
+                <div class="profile-card">
+                    <div style="width:80px; height:80px; background:var(--primary); border-radius:50%; margin: 0 auto 20px;"></div>
+                    <h2 id="profTitle">Манч</h2>
+                    <p>Твой личный токен доступа:</p>
+                    <div class="token-box" id="tokenDisplay">MT-XXXX-XXXX</div>
+                    <button onclick="logout()" style="background:none; border:1px solid red; color:red; padding:10px;">ВЫЙТИ</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('home', this)">🏠</div>
+            <div class="nav-item" onclick="switchTab('video', this)">📱</div>
+            <div class="nav-item" onclick="switchTab('profile', this)">👤</div>
+        </div>
+    </div>
+
+    <script>
+        // ДАННЫЕ ВИДЕО
+        const videos = [
+            "https://www.w3schools.com/html/mov_bbb.mp4",
+            "https://www.w3schools.com/html/movie.mp4",
+            "https://assets.mixkit.co/videos/preview/mixkit-tree-with-yellow-leaves-low-angle-shot-1305-large.mp4"
+        ];
+
+        // ЛОГИКА ВХОДА
+        function login() {
+            const val = document.getElementById('urlInput').value.toLowerCase().trim();
+            if(val === 'manch.com') {
+                const token = "MS_" + btoa("Manch"+Date.now()).substring(0,10);
+                localStorage.setItem('manch_token', token);
+                startApp();
+            } else {
+                alert("Ошибка! Попробуйте снова.");
+            }
+        }
+
+        function startApp() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'grid';
+            document.getElementById('tokenDisplay').innerText = localStorage.getItem('manch_token');
+            initVideoFeed();
+        }
+
+        // НАВИГАЦИЯ
+        function switchTab(tab, el) {
+            document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            
+            document.getElementById('view-' + tab).style.display = (tab === 'video' ? 'block' : 'block');
+            if(tab === 'video') document.getElementById('view-video').style.height = '100%';
+            
+            el.classList.add('active');
+        }
+
+        // ПОИСК
+        function doSearch() {
+            const q = document.getElementById('globalSearch').value;
+            if(q) window.open("https://www.google.com/search?q=" + q, "_blank");
+        }
+
+        // СКАЧИВАНИЕ (Имитация)
+        function doDownload() {
+            const link = document.getElementById('dlLink').value;
+            if(!link) return;
+            alert("Анализ ссылки... Файл будет найден и скачан в облако ManchSphere!");
+            window.open(link, '_blank'); // Открываем ссылку, чтобы сработал нативный скачиватель
+        }
+
+        // ВИДЕО ЛЕНТА
+        function initVideoFeed() {
+            const container = document.getElementById('vFeed');
+            container.innerHTML = '';
+            videos.forEach(src => {
+                const box = document.createElement('div');
+                box.className = 'video-box';
+                box.innerHTML = `
+                    <video src="${src}" loop muted onclick="this.paused?this.play():this.pause()" ondblclick="like(this)"></video>
+                    <div class="heart">❤️</div>
+                `;
+                container.appendChild(box);
+            });
+            setupObserver();
+        }
+
+        function like(v) {
+            const h = v.parentElement.querySelector('.heart');
+            h.style.animation = 'pop 0.6s ease-out';
+            setTimeout(() => h.style.animation = '', 600);
+        }
+
+        function setupObserver() {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    const v = e.target.querySelector('video');
+                    if(e.isIntersecting) v.play(); else { v.pause(); v.currentTime = 0; }
+                });
+            }, {threshold: 0.8});
+            document.querySelectorAll('.video-box').forEach(b => obs.observe(b));
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        // Проверка при загрузке
+        window.onload = () => { if(localStorage.getItem('manch_token')) startApp(); };
+    </script>
+</body>
+</html>
